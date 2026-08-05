@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { getAgreementBundle } from "@/lib/data";
 import { sendSignatureInvitation } from "@/lib/email";
+import { getPendingSigningParties } from "@/lib/signing";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export async function POST(_: Request, context: { params: Promise<{ id: string }> }) {
@@ -12,8 +13,8 @@ export async function POST(_: Request, context: { params: Promise<{ id: string }
     if (!bundle) return NextResponse.json({ error: "Agreement not found." }, { status: 404 });
     if (bundle.status === "completed") return NextResponse.json({ error: "Completed agreements are locked." }, { status: 409 });
 
-    const pending = bundle.songwriters.filter((writer) => !writer.signed_at);
-    const results = await Promise.allSettled(pending.map((writer) => sendSignatureInvitation(bundle, writer)));
+    const pending = getPendingSigningParties(bundle);
+    const results = await Promise.allSettled(pending.map((party) => sendSignatureInvitation(bundle, party)));
     const failed = results.filter((result) => result.status === "rejected");
     if (failed.length) {
       const reason = failed.map((result) => (result.status === "rejected" ? String(result.reason) : "")).join(" | ");
