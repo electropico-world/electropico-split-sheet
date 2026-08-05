@@ -7,6 +7,7 @@ import CopySigningLink from "@/components/CopySigningLink";
 import RetryFinalEmailButton from "@/components/RetryFinalEmailButton";
 import { requireAdmin } from "@/lib/auth";
 import { getAgreementBundle } from "@/lib/data";
+import { countRequiredSignatures, isMasterOwnerSigned, masterOwnerSignatureSource } from "@/lib/signing";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,8 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
   const { id } = await params;
   const bundle = await getAgreementBundle(id);
   if (!bundle) notFound();
-  const signed = bundle.songwriters.filter((writer) => writer.signed_at).length;
-  const allSigned = signed === bundle.songwriters.length;
+  const signatures = countRequiredSignatures(bundle);
+  const allSigned = signatures.signed === signatures.total;
 
   return (
     <div className="shell">
@@ -38,14 +39,14 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
         </section>
 
         <section className="kpis">
-          <div className="card kpi"><strong>{signed}/{bundle.songwriters.length}</strong><span>Signatures received</span></div>
+          <div className="card kpi"><strong>{signatures.signed}/{signatures.total}</strong><span>Required signatures received</span></div>
           <div className="card kpi"><strong>100%</strong><span>Composition accounted for</span></div>
           <div className="card kpi"><strong>100%</strong><span>Master accounted for</span></div>
         </section>
 
         {bundle.status === "completed" && (
           <div className="notice success">
-            Everyone signed. The final PDF was locked and emailed to all songwriters{bundle.completion_email_sent_at ? ` on ${dateLabel(bundle.completion_email_sent_at)}` : ""}.
+            Everyone signed. The final PDF was locked and emailed to all signers and Electropico{bundle.completion_email_sent_at ? ` on ${dateLabel(bundle.completion_email_sent_at)}` : ""}.
             {bundle.completion_email_error && <div style={{ marginTop: ".5rem" }}>Email warning: {bundle.completion_email_error}<RetryFinalEmailButton agreementId={bundle.id} /></div>}
           </div>
         )}
@@ -89,11 +90,24 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
         </section>
 
         <section className="card">
-          <div className="writer-head"><div><span className="eyebrow">Master</span><h2>Sound recording ownership</h2></div></div>
+          <div className="writer-head"><div><span className="eyebrow">Master</span><h2>Sound recording ownership and signing status</h2></div></div>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Owner / copyright claimant</th><th>Ownership</th><th>ISRC</th></tr></thead>
-              <tbody>{bundle.master_owners.map((owner) => <tr key={owner.id}><td>{owner.owner_name}</td><td>{owner.ownership_percent}%</td><td>{owner.isrc || "—"}</td></tr>)}</tbody>
+              <thead><tr><th>Owner / copyright claimant</th><th>Ownership</th><th>ISRC</th><th>Signer</th><th>Status</th><th>Private link</th></tr></thead>
+              <tbody>{bundle.master_owners.map((owner) => {
+                const source = masterOwnerSignatureSource(bundle, owner);
+                const signed = isMasterOwnerSigned(bundle, owner);
+                return (
+                  <tr key={owner.id}>
+                    <td>{owner.owner_name}<div className="meta">{owner.email || source.email || "Linked signer"}</div></td>
+                    <td>{owner.ownership_percent}%</td>
+                    <td>{owner.isrc || "—"}</td>
+                    <td>{source.note}</td>
+                    <td>{signed ? <span className="status completed">Signed {dateLabel(source.signedAt)}</span> : <span className="status pending">Pending</span>}</td>
+                    <td>{!signed && !owner.linked_songwriter_position && owner.signing_token && bundle.status !== "completed" ? <CopySigningLink token={owner.signing_token} /> : "—"}</td>
+                  </tr>
+                );
+              })}</tbody>
             </table>
           </div>
         </section>
@@ -101,8 +115,8 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
         {bundle.status !== "completed" && !allSigned && (
           <section className="card">
             <span className="eyebrow">Next action</span>
-            <h2>{bundle.status === "draft" ? "Send the private signing links." : "Follow up with pending songwriters."}</h2>
-            <p className="meta">The final PDF is generated only after the last songwriter signs. At that moment, it is automatically emailed to every songwriter.</p>
+            <h2>{bundle.status === "draft" ? "Send the private signing links." : "Follow up with pending signers."}</h2>
+            <p className="meta">The final PDF is generated only after every required songwriter and master owner / copyright claimant signs. At that moment, it is automatically emailed to all signers and Electropico.</p>
             <div className="actions"><SendInvitationsButton agreementId={bundle.id} resend={bundle.status === "pending"} /></div>
           </section>
         )}
