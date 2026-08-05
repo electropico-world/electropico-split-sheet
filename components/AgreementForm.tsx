@@ -16,7 +16,14 @@ const blankWriter = (): SongwriterInput => ({
   compositionPercent: 0,
 });
 
-const blankMasterOwner = (): MasterOwnerInput => ({ ownerName: "", ownershipPercent: 100, isrc: "" });
+const blankMasterOwner = (): MasterOwnerInput => ({
+  ownerName: "",
+  ownershipPercent: 100,
+  isrc: "",
+  email: "",
+  address: "",
+  linkedSongwriterPosition: null,
+});
 
 function toInitial(bundle?: AgreementBundle): AgreementInput {
   if (!bundle) {
@@ -51,6 +58,9 @@ function toInitial(bundle?: AgreementBundle): AgreementInput {
       ownerName: owner.owner_name,
       ownershipPercent: Number(owner.ownership_percent),
       isrc: owner.isrc || "",
+      email: owner.email || "",
+      address: owner.address || "",
+      linkedSongwriterPosition: owner.linked_songwriter_position || null,
     })),
   };
 }
@@ -74,7 +84,15 @@ export default function AgreementForm({ bundle }: { bundle?: AgreementBundle }) 
     setForm((current) => {
       const writers = [...current.songwriters];
       while (writers.length < count) writers.push(blankWriter());
-      return { ...current, songwriters: writers.slice(0, count) };
+      return {
+        ...current,
+        songwriters: writers.slice(0, count),
+        masterOwners: current.masterOwners.map((owner) => ({
+          ...owner,
+          linkedSongwriterPosition:
+            owner.linkedSongwriterPosition && owner.linkedSongwriterPosition <= count ? owner.linkedSongwriterPosition : null,
+        })),
+      };
     });
   }
 
@@ -85,7 +103,7 @@ export default function AgreementForm({ bundle }: { bundle?: AgreementBundle }) 
     }));
   }
 
-  function updateOwner(index: number, key: keyof MasterOwnerInput, value: string | number) {
+  function updateOwner(index: number, key: keyof MasterOwnerInput, value: string | number | null) {
     setForm((current) => ({
       ...current,
       masterOwners: current.masterOwners.map((owner, i) => (i === index ? { ...owner, [key]: value } : owner)),
@@ -94,7 +112,7 @@ export default function AgreementForm({ bundle }: { bundle?: AgreementBundle }) 
 
   function addOwner() {
     if (form.masterOwners.length >= 4) return;
-    setForm((current) => ({ ...current, masterOwners: [...current.masterOwners, { ownerName: "", ownershipPercent: 0, isrc: "" }] }));
+    setForm((current) => ({ ...current, masterOwners: [...current.masterOwners, { ...blankMasterOwner(), ownershipPercent: 0 }] }));
   }
 
   function removeOwner(index: number) {
@@ -202,20 +220,44 @@ export default function AgreementForm({ bundle }: { bundle?: AgreementBundle }) 
       <section className="card">
         <span className="eyebrow">Step 3</span>
         <h2>Sound recording ownership</h2>
-        <p className="meta">Master owners are listed in the final agreement but do not receive signature requests unless they are also songwriters.</p>
-        {form.masterOwners.map((owner, index) => (
-          <div className="writer-card" key={index}>
-            <div className="writer-head">
-              <h3>Master owner {index + 1}</h3>
-              {form.masterOwners.length > 1 && <button className="btn btn-danger" type="button" onClick={() => removeOwner(index)}>Remove</button>}
+        <p className="meta">Each master owner / copyright claimant must sign. If they are already one of the songwriters, link them below so they do not sign twice.</p>
+        {form.masterOwners.map((owner, index) => {
+          const linked = owner.linkedSongwriterPosition || null;
+          return (
+            <div className="writer-card" key={index}>
+              <div className="writer-head">
+                <h3>Master owner {index + 1}</h3>
+                {form.masterOwners.length > 1 && <button className="btn btn-danger" type="button" onClick={() => removeOwner(index)}>Remove</button>}
+              </div>
+              <div className="grid grid-3">
+                <div className="field"><label>Owner / copyright claimant *</label><input required value={owner.ownerName} onChange={(e) => updateOwner(index, "ownerName", e.target.value)} /></div>
+                <div className="field"><label>Ownership % *</label><input type="number" min="0" max="100" step="0.001" required value={owner.ownershipPercent} onChange={(e) => updateOwner(index, "ownershipPercent", Number(e.target.value))} /></div>
+                <div className="field"><label>ISRC</label><input value={owner.isrc || ""} onChange={(e) => updateOwner(index, "isrc", e.target.value)} /></div>
+                <div className="field" style={{ gridColumn: "1 / -1" }}>
+                  <label>Signing role *</label>
+                  <select value={linked || ""} onChange={(e) => updateOwner(index, "linkedSongwriterPosition", e.target.value ? Number(e.target.value) : null)}>
+                    <option value="">Separate master owner signer</option>
+                    {form.songwriters.map((writer, writerIndex) => (
+                      <option value={writerIndex + 1} key={writerIndex}>
+                        Same person as Songwriter {writerIndex + 1}{writer.legalName ? ` — ${writer.legalName}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {!linked ? (
+                  <>
+                    <div className="field"><label>Master owner email *</label><input type="email" required value={owner.email || ""} onChange={(e) => updateOwner(index, "email", e.target.value)} /></div>
+                    <div className="field" style={{ gridColumn: "span 2" }}><label>Master owner mailing address *</label><textarea required value={owner.address || ""} onChange={(e) => updateOwner(index, "address", e.target.value)} /></div>
+                  </>
+                ) : (
+                  <div className="notice" style={{ gridColumn: "1 / -1" }}>
+                    This master owner will be covered by Songwriter {linked}'s signature and will not receive a duplicate signing link.
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-3">
-              <div className="field"><label>Owner / copyright claimant *</label><input required value={owner.ownerName} onChange={(e) => updateOwner(index, "ownerName", e.target.value)} /></div>
-              <div className="field"><label>Ownership % *</label><input type="number" min="0" max="100" step="0.001" required value={owner.ownershipPercent} onChange={(e) => updateOwner(index, "ownershipPercent", Number(e.target.value))} /></div>
-              <div className="field"><label>ISRC</label><input value={owner.isrc || ""} onChange={(e) => updateOwner(index, "isrc", e.target.value)} /></div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         <div className="actions"><button type="button" className="btn btn-secondary" onClick={addOwner} disabled={form.masterOwners.length >= 4}>Add master owner</button></div>
         <div className={`total-line ${Math.abs(masterTotal - 100) < 0.001 ? "total-good" : "total-bad"}`}>
           Master total: {masterTotal}% {Math.abs(masterTotal - 100) < 0.001 ? "✓" : "— must equal 100%"}
