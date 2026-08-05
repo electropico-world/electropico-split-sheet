@@ -5,6 +5,7 @@ import StatusBadge from "@/components/StatusBadge";
 import SendInvitationsButton from "@/components/SendInvitationsButton";
 import CopySigningLink from "@/components/CopySigningLink";
 import RetryFinalEmailButton from "@/components/RetryFinalEmailButton";
+import { MASTER_OWNERSHIP_LABEL_RELEASE_TEXT } from "@/lib/agreementText";
 import { requireAdmin } from "@/lib/auth";
 import { getAgreementBundle } from "@/lib/data";
 import { countRequiredSignatures, isMasterOwnerSigned, masterOwnerSignatureSource } from "@/lib/signing";
@@ -64,6 +65,12 @@ export default async function AgreementDetailPage({ params }: { params: Promise<
             <div><span className="eyebrow">Primary artist</span><p>{bundle.artist_name}</p></div>
             <div><span className="eyebrow">Governing law</span><p>{bundle.governing_state}</p></div>
           </div>
+        </section>
+
+        <section className="card legal-copy">
+          <span className="eyebrow">Agreement language</span>
+          <h2>Master Ownership / Label Release</h2>
+          <p>{MASTER_OWNERSHIP_LABEL_RELEASE_TEXT}</p>
         </section>
 
         <section className="card">
