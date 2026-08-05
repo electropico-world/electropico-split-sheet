@@ -176,11 +176,14 @@ export async function generateAgreementPdf(bundle: AgreementBundle) {
   drawKeyValue(page, "Primary Artist(s)", bundle.artist_name, MARGIN + col + 18, y, col, bold, regular);
   y -= 56;
 
-  const intro = `Each undersigned songwriter, whether independently or jointly, has contributed to the authorship of the original musical composition identified above (the “Composition”) and, where applicable, to the associated sound recording (the “Master”). Ownership and administration of the Master shall be as stated in the Sound Recording Ownership table below. Rights in the Master include, without limitation, reproduction, manufacturing, monetization, licensing, distribution, and other commercial exploitation of the Master.`;
+  const intro = `Each undersigned songwriter, whether independently or jointly, has contributed to the authorship of the original musical composition identified above (the “Composition”) and, where applicable, to the associated sound recording (the “Master”). Ownership and administration of the Master shall be as stated in the Sound Recording Ownership table below. Rights in the Master include, without limitation, reproduction, manufacturing, monetization, distribution, promotion, and other commercial exploitation of the Master.`;
   y = drawWrapped(page, intro, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 10;
 
   const jointWork = `The undersigned intend that all music and lyrics in the Composition be merged into a single joint work. The Composition shall be registered with the applicable performing rights organizations and/or publishing administrators according to the shares below. Composition shares total 100%.`;
-  y = drawWrapped(page, jointWork, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 16;
+  y = drawWrapped(page, jointWork, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 10;
+
+  const masterOwnershipNote = `Master Ownership / Label Release. The parties acknowledge that master ownership is set out in the Sound Recording Ownership table below. Where FABRIKA LLC d/b/a ELECTROPICO RECORDS is listed as one hundred percent (100%) owner of the Master, Artist acknowledges that ELECTROPICO RECORDS will act as label of record and may distribute, promote, monetize, market, and creatively develop the Master as part of its catalog and release activity. Artist retains Artist’s songwriter share, publishing rights, name, likeness, and composition rights as listed in this split sheet.`;
+  y = drawWrapped(page, masterOwnershipNote, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 16;
 
   ({ page, y, pageNumber } = ensureSpace(pdf, page, y, 160, bold, regular, pageNumber));
   page.drawText("COMPOSITION OWNERSHIP", { x: MARGIN, y, size: 10, font: bold, color: INK });
