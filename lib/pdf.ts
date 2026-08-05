@@ -131,7 +131,10 @@ async function drawSignatureBlock(
   page.drawText(clean(email), { x: MARGIN + 12, y: y - 52, size: 8.5, font: regular, color: INK });
   const addressLines = wrapText(clean(address), regular, 8.2, 220).slice(0, 3);
   addressLines.forEach((line, i) => page.drawText(line, { x: MARGIN + 12, y: y - 69 - i * 10, size: 8.2, font: regular, color: INK }));
-  if (note) page.drawText(note, { x: MARGIN + 12, y: y - 106, size: 7.4, font: regular, color: MUTED });
+  if (note) {
+    const noteLines = wrapText(note, regular, 7.2, 248).slice(0, 3);
+    noteLines.forEach((line, i) => page.drawText(line, { x: MARGIN + 12, y: y - 104 - i * 8.8, size: 7.2, font: regular, color: MUTED }));
+  }
 
   page.drawText("SIGNATURE", { x: MARGIN + 284, y: y - 21, size: 7, font: bold, color: MUTED });
   if (signatureData) {
