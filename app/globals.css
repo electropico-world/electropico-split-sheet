@@ -34,6 +34,11 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: .75rem; font-weight: 900; letter-spacing: .06em; }
+.brand-logo-link { gap: .7rem; letter-spacing: .12em; }
+.brand-logo { width: 150px; height: auto; display: block; }
+.brand-title { font-size: .76rem; letter-spacing: .18em; color: var(--muted); }
+.sign-brand { flex-direction: column; align-items: flex-start; gap: .35rem; }
+.sign-logo { width: min(280px, 72vw); height: auto; display: block; }
 .brand-mark {
   width: 2.2rem; height: 2.2rem; display: grid; place-items: center;
   border-radius: 50%; background: var(--ink); color: var(--accent); font-size: 1.05rem;
@@ -118,5 +123,7 @@ code { background: #eee; padding: .1rem .3rem; border-radius: .3rem; }
   .hero { align-items: start; flex-direction: column; }
   .agreement-row { align-items: flex-start; flex-direction: column; }
   .topbar { padding: .85rem 4vw; }
+  .brand-logo { width: 118px; }
+  .brand-title { font-size: .68rem; }
   .container { width: 92vw; padding-top: 1.5rem; }
 }
