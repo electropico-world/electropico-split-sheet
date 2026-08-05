@@ -20,11 +20,20 @@ export async function getAgreementBundle(id: string): Promise<AgreementBundle | 
 
 export async function getAgreementBySigningToken(token: string): Promise<AgreementBundle | null> {
   const supabase = getSupabaseAdmin();
-  const { data: songwriter, error } = await supabase
+
+  const { data: songwriter } = await supabase
     .from("songwriters")
     .select("agreement_id")
     .eq("signing_token", token)
-    .single();
-  if (error || !songwriter) return null;
-  return getAgreementBundle(songwriter.agreement_id);
+    .maybeSingle();
+  if (songwriter?.agreement_id) return getAgreementBundle(songwriter.agreement_id);
+
+  const { data: masterOwner } = await supabase
+    .from("master_owners")
+    .select("agreement_id")
+    .eq("signing_token", token)
+    .maybeSingle();
+  if (masterOwner?.agreement_id) return getAgreementBundle(masterOwner.agreement_id);
+
+  return null;
 }
