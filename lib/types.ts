@@ -26,6 +26,13 @@ export type MasterOwner = {
   owner_name: string;
   ownership_percent: number;
   isrc: string | null;
+  email: string | null;
+  address: string | null;
+  linked_songwriter_position: number | null;
+  signing_token: string | null;
+  signed_name: string | null;
+  signature_data: string | null;
+  signed_at: string | null;
 };
 
 export type Agreement = {
@@ -66,6 +73,9 @@ export type MasterOwnerInput = {
   ownerName: string;
   ownershipPercent: number;
   isrc?: string;
+  email?: string;
+  address?: string;
+  linkedSongwriterPosition?: number | null;
 };
 
 export type AgreementInput = {
