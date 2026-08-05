@@ -9,7 +9,7 @@ function getResend() {
 }
 
 function fromAddress() {
-  return process.env.EMAIL_FROM || "Electropico Splits <splits@agreements.electropico.world>";
+  return process.env.EMAIL_FROM || "Electropico Records <agreements@electropico.world>";
 }
 
 function electropicoConfirmationEmail() {
@@ -18,6 +18,10 @@ function electropicoConfirmationEmail() {
 
 function appUrl() {
   return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+}
+
+function logoHtml() {
+  return `<img src="${appUrl()}/electropico-logo.svg" alt="Electropico Records" style="display:block;width:230px;max-width:100%;height:auto;margin:0 0 24px" />`;
 }
 
 function resendErrorMessage(error: unknown) {
@@ -51,7 +55,7 @@ export async function sendSignatureInvitation(bundle: AgreementBundle, party: Si
     html: `
       <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#151515;line-height:1.6">
         <div style="height:12px;background:#f2d900;margin-bottom:28px"></div>
-        <p style="font-size:12px;letter-spacing:.14em;font-weight:bold">ELECTROPICO RECORDS</p>
+        ${logoHtml()}
         <h1 style="font-size:30px;line-height:1.1">Your split agreement is ready.</h1>
         <p>Hello ${party.name},</p>
         <p>Please review and sign as <strong>${party.roleLabel}</strong> for <strong>${bundle.song_title}</strong> by ${bundle.artist_name}.</p>
@@ -73,7 +77,7 @@ export async function sendCompletedAgreement(bundle: AgreementBundle, pdf: Buffe
     html: `
       <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#151515;line-height:1.6">
         <div style="height:12px;background:#f2d900;margin-bottom:28px"></div>
-        <p style="font-size:12px;letter-spacing:.14em;font-weight:bold">ELECTROPICO RECORDS</p>
+        ${logoHtml()}
         <h1 style="font-size:30px;line-height:1.1">The agreement is complete.</h1>
         <p>All required parties have signed the Electropico split agreement for <strong>${bundle.song_title}</strong> by ${bundle.artist_name}.</p>
         <p>The fully executed agreement is attached for everyone’s records.</p>
@@ -98,6 +102,7 @@ export async function sendElectropicoCompletionConfirmation(bundle: AgreementBun
     html: `
       <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#151515;line-height:1.6">
         <div style="height:12px;background:#f2d900;margin-bottom:28px"></div>
+        ${logoHtml()}
         <p style="font-size:12px;letter-spacing:.14em;font-weight:bold">ELECTROPICO INTERNAL CONFIRMATION</p>
         <h1 style="font-size:30px;line-height:1.1">Split agreement completed.</h1>
         <p>The split agreement for <strong>${bundle.song_title}</strong> by <strong>${bundle.artist_name}</strong> has been fully signed.</p>
