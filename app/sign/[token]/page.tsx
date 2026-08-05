@@ -21,10 +21,7 @@ export default async function SigningPage({ params }: { params: Promise<{ token:
 
   return (
     <main className="narrow">
-      <div className="brand sign-brand" style={{ marginBottom: "2rem" }}>
-        <img className="sign-logo" src="/electropico-logo.svg" alt="Electropico Records" />
-        <span className="brand-title">SPLIT AGREEMENT</span>
-      </div>
+      <div className="brand" style={{ marginBottom: "2rem" }}><span className="brand-mark">EP</span><span>ELECTROPICO SPLITS</span></div>
 
       {party.signedAt ? (
         <section className="card">
@@ -46,8 +43,9 @@ export default async function SigningPage({ params }: { params: Promise<{ token:
 
           <section className="card legal-copy">
             <h2>Song & Sound Recording Split Agreement</h2>
-            <p>Each undersigned songwriter, whether independently or jointly, has contributed to the authorship of the original musical composition identified above (the “Composition”) and, where applicable, to the associated sound recording (the “Master”). Ownership and administration of the Master shall be as stated below. Rights in the Master include, without limitation, reproduction, manufacturing, monetization, licensing, distribution, and other commercial exploitation of the Master.</p>
+            <p>Each undersigned songwriter, whether independently or jointly, has contributed to the authorship of the original musical composition identified above (the “Composition”) and, where applicable, to the associated sound recording (the “Master”). Ownership and administration of the Master shall be as stated below. Rights in the Master include, without limitation, reproduction, manufacturing, monetization, distribution, promotion, and other commercial exploitation of the Master.</p>
             <p>The undersigned intend that all music and lyrics in the Composition be merged into a single joint work. The Composition shall be registered with the applicable performing rights organizations and/or publishing administrators according to the shares below.</p>
+            <p><strong>Master Ownership / Label Release.</strong> The parties acknowledge that master ownership is set out in the Sound Recording Ownership table below. Where FABRIKA LLC d/b/a ELECTROPICO RECORDS is listed as one hundred percent (100%) owner of the Master, Artist acknowledges that ELECTROPICO RECORDS will act as label of record and may distribute, promote, monetize, market, and creatively develop the Master as part of its catalog and release activity. Artist retains Artist’s songwriter share, publishing rights, name, likeness, and composition rights as listed in this split sheet.</p>
 
             <h3>Composition ownership</h3>
             <div className="table-wrap" style={{ fontFamily: "Arial, sans-serif" }}>
