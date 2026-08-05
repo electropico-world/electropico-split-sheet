@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import { MASTER_OWNERSHIP_LABEL_RELEASE_TEXT } from "./agreementText";
 import { masterOwnerSignatureSource } from "./signing";
 import type { AgreementBundle } from "./types";
 
@@ -36,17 +37,7 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number) {
   return lines;
 }
 
-function drawWrapped(
-  page: PDFPage,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  font: PDFFont,
-  size: number,
-  lineHeight: number,
-  color = INK,
-) {
+function drawWrapped(page: PDFPage, text: string, x: number, y: number, maxWidth: number, font: PDFFont, size: number, lineHeight: number, color = INK) {
   const lines = wrapText(text, font, size, maxWidth);
   lines.forEach((line, index) => page.drawText(line, { x, y: y - index * lineHeight, size, font, color }));
   return y - lines.length * lineHeight;
@@ -59,15 +50,7 @@ function drawHeader(page: PDFPage, bold: PDFFont, regular: PDFFont, pageNumber: 
   page.drawText(String(pageNumber), { x: PAGE_W - MARGIN - 6, y: 25, size: 8, font: regular, color: MUTED });
 }
 
-function ensureSpace(
-  pdf: PDFDocument,
-  page: PDFPage,
-  y: number,
-  needed: number,
-  bold: PDFFont,
-  regular: PDFFont,
-  pageNumber: number,
-) {
+function ensureSpace(pdf: PDFDocument, page: PDFPage, y: number, needed: number, bold: PDFFont, regular: PDFFont, pageNumber: number) {
   if (y - needed > 45) return { page, y, pageNumber };
   const next = pdf.addPage([PAGE_W, PAGE_H]);
   const nextPageNumber = pageNumber + 1;
@@ -81,17 +64,7 @@ function drawKeyValue(page: PDFPage, label: string, value: string, x: number, y:
   page.drawLine({ start: { x, y: y - 21 }, end: { x: x + width, y: y - 21 }, thickness: 0.7, color: LINE });
 }
 
-function drawTableRow(
-  page: PDFPage,
-  values: string[],
-  widths: number[],
-  x: number,
-  y: number,
-  height: number,
-  font: PDFFont,
-  size: number,
-  fill?: ReturnType<typeof rgb>,
-) {
+function drawTableRow(page: PDFPage, values: string[], widths: number[], x: number, y: number, height: number, font: PDFFont, size: number, fill?: ReturnType<typeof rgb>) {
   if (fill) page.drawRectangle({ x, y: y - height, width: widths.reduce((a, b) => a + b, 0), height, color: fill });
   let cursor = x;
   values.forEach((value, index) => {
@@ -135,7 +108,6 @@ async function drawSignatureBlock(
     const noteLines = wrapText(note, regular, 7.2, 248).slice(0, 3);
     noteLines.forEach((line, i) => page.drawText(line, { x: MARGIN + 12, y: y - 104 - i * 8.8, size: 7.2, font: regular, color: MUTED }));
   }
-
   page.drawText("SIGNATURE", { x: MARGIN + 284, y: y - 21, size: 7, font: bold, color: MUTED });
   if (signatureData) {
     try {
@@ -182,8 +154,7 @@ export async function generateAgreementPdf(bundle: AgreementBundle) {
   const jointWork = `The undersigned intend that all music and lyrics in the Composition be merged into a single joint work. The Composition shall be registered with the applicable performing rights organizations and/or publishing administrators according to the shares below. Composition shares total 100%.`;
   y = drawWrapped(page, jointWork, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 10;
 
-  const masterOwnershipNote = `Master Ownership / Label Release. The parties acknowledge that master ownership is set out in the Sound Recording Ownership table below. Where FABRIKA LLC d/b/a ELECTROPICO RECORDS is listed as one hundred percent (100%) owner of the Master, Artist acknowledges that ELECTROPICO RECORDS will act as label of record and may distribute, promote, monetize, market, and creatively develop the Master as part of its catalog and release activity. Artist retains Artist’s songwriter share, publishing rights, name, likeness, and composition rights as listed in this split sheet.`;
-  y = drawWrapped(page, masterOwnershipNote, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 16;
+  y = drawWrapped(page, `Label Release. ${MASTER_OWNERSHIP_LABEL_RELEASE_TEXT}`, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 16;
 
   ({ page, y, pageNumber } = ensureSpace(pdf, page, y, 160, bold, regular, pageNumber));
   page.drawText("COMPOSITION OWNERSHIP", { x: MARGIN, y, size: 10, font: bold, color: INK });
@@ -192,16 +163,7 @@ export async function generateAgreementPdf(bundle: AgreementBundle) {
   drawTableRow(page, ["Songwriter", "%", "IPI / CAE", "PRO", "Publisher", "Contribution"], writerWidths, MARGIN, y, 25, bold, 7.1, rgb(0.95, 0.95, 0.92));
   y -= 25;
   for (const writer of bundle.songwriters) {
-    drawTableRow(
-      page,
-      [writer.legal_name, `${writer.composition_percent}%`, clean(writer.ipi_cae), clean(writer.pro), clean(writer.publisher), writer.contribution],
-      writerWidths,
-      MARGIN,
-      y,
-      36,
-      regular,
-      7.3,
-    );
+    drawTableRow(page, [writer.legal_name, `${writer.composition_percent}%`, clean(writer.ipi_cae), clean(writer.pro), clean(writer.publisher), writer.contribution], writerWidths, MARGIN, y, 36, regular, 7.3);
     y -= 36;
   }
   page.drawText("Composition Total: 100%", { x: PAGE_W - MARGIN - 121, y: y - 14, size: 9, font: bold, color: INK });
@@ -228,50 +190,16 @@ export async function generateAgreementPdf(bundle: AgreementBundle) {
 
   page.drawText("ACKNOWLEDGED AND AGREED — SONGWRITERS", { x: MARGIN, y, size: 12, font: serifBold, color: INK });
   y -= 25;
-
   for (const writer of bundle.songwriters) {
-    ({ page, y, pageNumber } = await drawSignatureBlock(
-      pdf,
-      page,
-      y,
-      pageNumber,
-      bold,
-      regular,
-      serif,
-      "Songwriter",
-      writer.legal_name,
-      writer.email,
-      writer.address,
-      writer.signature_data,
-      writer.signed_name,
-      writer.signed_at,
-      writer.professional_name ? `p/k/a ${writer.professional_name}` : undefined,
-    ));
+    ({ page, y, pageNumber } = await drawSignatureBlock(pdf, page, y, pageNumber, bold, regular, serif, "Songwriter", writer.legal_name, writer.email, writer.address, writer.signature_data, writer.signed_name, writer.signed_at, writer.professional_name ? `p/k/a ${writer.professional_name}` : undefined));
   }
 
   ({ page, y, pageNumber } = ensureSpace(pdf, page, y, 55, bold, regular, pageNumber));
   page.drawText("ACKNOWLEDGED AND AGREED — SOUND RECORDING OWNERS / COPYRIGHT CLAIMANTS", { x: MARGIN, y, size: 10.5, font: serifBold, color: INK });
   y -= 25;
-
   for (const owner of bundle.master_owners) {
     const source = masterOwnerSignatureSource(bundle, owner);
-    ({ page, y, pageNumber } = await drawSignatureBlock(
-      pdf,
-      page,
-      y,
-      pageNumber,
-      bold,
-      regular,
-      serif,
-      "Sound Recording Owner / Copyright Claimant",
-      owner.owner_name,
-      source.email,
-      source.address,
-      source.signatureData,
-      source.signedName,
-      source.signedAt,
-      `${owner.ownership_percent}% master ownership · ${source.note}`,
-    ));
+    ({ page, y, pageNumber } = await drawSignatureBlock(pdf, page, y, pageNumber, bold, regular, serif, "Sound Recording Owner / Copyright Claimant", owner.owner_name, source.email, source.address, source.signatureData, source.signedName, source.signedAt, `${owner.ownership_percent}% master ownership · ${source.note}`));
   }
 
   const bytes = await pdf.save();
