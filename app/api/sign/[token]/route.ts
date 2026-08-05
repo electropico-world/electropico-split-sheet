@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { completeAgreementIfReady } from "@/lib/complete";
 import { getAgreementBySigningToken } from "@/lib/data";
+import { getSigningPartyByToken } from "@/lib/signing";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { signatureSchema } from "@/lib/validation";
 
@@ -12,15 +13,16 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     if (!bundle) return NextResponse.json({ error: "This signing link is invalid." }, { status: 404 });
     if (bundle.status === "completed") return NextResponse.json({ error: "This agreement is already complete." }, { status: 409 });
 
-    const writer = bundle.songwriters.find((item) => item.signing_token === token);
-    if (!writer) return NextResponse.json({ error: "Signer not found." }, { status: 404 });
-    if (writer.signed_at) return NextResponse.json({ error: "You have already signed this agreement." }, { status: 409 });
+    const party = getSigningPartyByToken(bundle, token);
+    if (!party) return NextResponse.json({ error: "Signer not found." }, { status: 404 });
+    if (party.signedAt) return NextResponse.json({ error: "You have already signed this agreement." }, { status: 409 });
 
     const supabase = getSupabaseAdmin();
+    const table = party.role === "songwriter" ? "songwriters" : "master_owners";
     const { error } = await supabase
-      .from("songwriters")
+      .from(table)
       .update({ signed_name: input.signedName, signature_data: input.signatureData, signed_at: new Date().toISOString() })
-      .eq("id", writer.id)
+      .eq("id", party.id)
       .is("signed_at", null);
     if (error) throw error;
 
