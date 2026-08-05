@@ -1,4 +1,4 @@
-import type { AgreementBundle, MasterOwner, Songwriter } from "./types";
+import type { AgreementBundle, MasterOwner } from "./types";
 
 export type SigningParty = {
   role: "songwriter" | "master_owner";
@@ -69,7 +69,7 @@ export function getRequiredSigningParties(bundle: AgreementBundle): SigningParty
 
   const masterOwnerParties: SigningParty[] = bundle.master_owners
     .filter((owner) => !owner.linked_songwriter_position)
-    .map((owner) => ({
+    .map<SigningParty>((owner) => ({
       role: "master_owner",
       id: owner.id,
       name: owner.owner_name,
