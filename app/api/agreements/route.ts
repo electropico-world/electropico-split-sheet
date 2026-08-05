@@ -11,8 +11,17 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.rpc("save_agreement", { p_agreement_id: null, p_data: input });
     if (error) throw error;
     return NextResponse.json({ id: data }, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to create agreement.";
-    return NextResponse.json({ error: message }, { status: 400 });
+} catch (error) {
+  console.error("Create agreement error:", error);
+
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error !== null && "message" in error
+        ? String((error as { message: unknown }).message)
+        : "Unable to create agreement.";
+
+  return NextResponse.json({ error: message }, { status: 400 });
+}
   }
 }
