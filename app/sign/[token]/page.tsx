@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import SignAgreementForm from "@/components/SignAgreementForm";
 import { getAgreementBySigningToken } from "@/lib/data";
+import { countRequiredSignatures, getSigningPartyByToken } from "@/lib/signing";
 
 export const dynamic = "force-dynamic";
 
@@ -14,22 +15,22 @@ export default async function SigningPage({ params }: { params: Promise<{ token:
   const { token } = await params;
   const bundle = await getAgreementBySigningToken(token);
   if (!bundle) notFound();
-  const writer = bundle.songwriters.find((item) => item.signing_token === token);
-  if (!writer) notFound();
-  const signedCount = bundle.songwriters.filter((item) => item.signed_at).length;
+  const party = getSigningPartyByToken(bundle, token);
+  if (!party) notFound();
+  const counts = countRequiredSignatures(bundle);
 
   return (
     <main className="narrow">
       <div className="brand" style={{ marginBottom: "2rem" }}><span className="brand-mark">EP</span><span>ELECTROPICO SPLITS</span></div>
 
-      {writer.signed_at ? (
+      {party.signedAt ? (
         <section className="card">
           <span className="eyebrow">Signature received</span>
-          <h1 style={{ fontSize: "3rem", letterSpacing: "-.05em", margin: ".6rem 0" }}>Thank you, {writer.legal_name}.</h1>
+          <h1 style={{ fontSize: "3rem", letterSpacing: "-.05em", margin: ".6rem 0" }}>Thank you, {party.name}.</h1>
           {bundle.status === "completed" ? (
-            <div className="notice success">All songwriters have signed. The completed PDF has been emailed to everyone.</div>
+            <div className="notice success">All required parties have signed. The completed PDF has been emailed to all signers and Electropico.</div>
           ) : (
-            <div className="notice">Your signature is recorded. The agreement currently has {signedCount} of {bundle.songwriters.length} signatures. You will receive the final PDF by email after everyone signs.</div>
+            <div className="notice">Your signature is recorded. The agreement currently has {counts.signed} of {counts.total} required signatures. You will receive the final PDF by email after everyone signs.</div>
           )}
         </section>
       ) : (
@@ -37,7 +38,7 @@ export default async function SigningPage({ params }: { params: Promise<{ token:
           <section className="card">
             <span className="eyebrow">Signature requested</span>
             <h1 style={{ fontSize: "3rem", letterSpacing: "-.05em", margin: ".6rem 0" }}>{bundle.song_title}</h1>
-            <p className="meta">Prepared for {writer.legal_name} · {bundle.artist_name} · Effective {dateLabel(bundle.effective_date)}</p>
+            <p className="meta">Prepared for {party.name} · {party.roleLabel} · {bundle.artist_name} · Effective {dateLabel(bundle.effective_date)}</p>
           </section>
 
           <section className="card legal-copy">
@@ -69,14 +70,14 @@ export default async function SigningPage({ params }: { params: Promise<{ token:
             <span className="eyebrow">Your confirmation</span>
             <h2>Review and sign</h2>
             <div className="notice" style={{ marginBottom: "1rem" }}>
-              Your assigned composition share is <strong>{writer.composition_percent}%</strong>. Your contribution is listed as <strong>{writer.contribution}</strong>.
+              You are signing as <strong>{party.roleLabel}</strong>. Your listed share is <strong>{party.shareLabel}</strong>.
             </div>
-            <SignAgreementForm token={token} legalName={writer.legal_name} />
+            <SignAgreementForm token={token} legalName={party.name} />
           </section>
         </>
       )}
 
-      <p className="footer-note">This is a private signing link assigned to {writer.email}. Do not forward it.</p>
+      <p className="footer-note">This is a private signing link assigned to {party.email}. Do not forward it.</p>
     </main>
   );
 }
