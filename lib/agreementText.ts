@@ -1,2 +1,2 @@
-export const LABEL_RELEASE_TEXT =
+export const MASTER_OWNERSHIP_LABEL_RELEASE_TEXT =
   "ELECTROPICO RECORDS will act as the label of record for this release and may support the track through distribution, DSP delivery, metadata preparation, release planning, artwork, visual identity, social media assets, playlist pitching, DJ pool servicing, editorial outreach, content creation, promotional planning, compilations, merchandise-drop activations, and other label initiatives selected by ELECTROPICO RECORDS. ELECTROPICO RECORDS does not guarantee specific streaming numbers, playlist placement, press coverage, sync placements, income, or commercial results. Electropico Records is a division of Fabrika LLC.";
