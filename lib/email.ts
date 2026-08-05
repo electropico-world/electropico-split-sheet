@@ -8,17 +8,38 @@ function getResend() {
 }
 
 function fromAddress() {
-  return process.env.EMAIL_FROM || "Electropico Records <onboarding@resend.dev>";
+  return process.env.EMAIL_FROM || "Electropico Splits <splits@agreements.electropico.world>";
 }
 
 function appUrl() {
   return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
 }
 
-export async function sendSignatureInvitation(bundle: AgreementBundle, writer: Songwriter) {
+function resendErrorMessage(error: unknown) {
+  if (!error) return "Unknown Resend email error.";
+  if (typeof error === "string") return error;
+  if (typeof error === "object" && error !== null) {
+    const e = error as { message?: unknown; name?: unknown; statusCode?: unknown };
+    return [e.name, e.message, e.statusCode].filter(Boolean).map(String).join(" | ");
+  }
+  return "Unknown Resend email error.";
+}
+
+async function sendOrThrow(payload: Parameters<Resend["emails"]["send"]>[0]) {
   const resend = getResend();
+  const result = await resend.emails.send(payload);
+
+  if (result.error) {
+    throw new Error(resendErrorMessage(result.error));
+  }
+
+  return result.data;
+}
+
+export async function sendSignatureInvitation(bundle: AgreementBundle, writer: Songwriter) {
   const signingUrl = `${appUrl()}/sign/${writer.signing_token}`;
-  return resend.emails.send({
+
+  return sendOrThrow({
     from: fromAddress(),
     to: writer.email,
     subject: `Signature requested — ${bundle.song_title} split agreement`,
@@ -36,8 +57,7 @@ export async function sendSignatureInvitation(bundle: AgreementBundle, writer: S
 }
 
 export async function sendCompletedAgreement(bundle: AgreementBundle, pdf: Buffer) {
-  const resend = getResend();
-  return resend.emails.send({
+  return sendOrThrow({
     from: fromAddress(),
     to: bundle.songwriters.map((writer) => writer.email),
     subject: `Completed Split Agreement — ${bundle.song_title} by ${bundle.artist_name}`,
