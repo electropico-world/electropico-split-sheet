@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const emailCheck = z.string().trim().email();
+
 const songwriterSchema = z.object({
   legalName: z.string().trim().min(2, "Legal name is required."),
   professionalName: z.string().trim().optional().default(""),
@@ -16,6 +18,9 @@ const masterOwnerSchema = z.object({
   ownerName: z.string().trim().min(2, "Master owner name is required."),
   ownershipPercent: z.coerce.number().min(0).max(100),
   isrc: z.string().trim().optional().default(""),
+  email: z.string().trim().optional().default(""),
+  address: z.string().trim().optional().default(""),
+  linkedSongwriterPosition: z.coerce.number().int().min(1).max(4).nullable().optional().default(null),
 });
 
 export const agreementSchema = z
@@ -37,6 +42,7 @@ export const agreementSchema = z
         message: `Composition splits must total 100%. Current total: ${compositionTotal}%.`,
       });
     }
+
     const masterTotal = data.masterOwners.reduce((sum, m) => sum + Number(m.ownershipPercent), 0);
     if (Math.abs(masterTotal - 100) > 0.001) {
       ctx.addIssue({
@@ -45,6 +51,36 @@ export const agreementSchema = z
         message: `Master ownership must total 100%. Current total: ${masterTotal}%.`,
       });
     }
+
+    data.masterOwners.forEach((owner, index) => {
+      const linkedPosition = owner.linkedSongwriterPosition || null;
+      if (linkedPosition && linkedPosition > data.songwriters.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["masterOwners", index, "linkedSongwriterPosition"],
+          message: "Linked songwriter must exist in this agreement.",
+        });
+      }
+
+      if (!linkedPosition) {
+        const email = owner.email?.trim() || "";
+        const address = owner.address?.trim() || "";
+        if (!emailCheck.safeParse(email).success) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["masterOwners", index, "email"],
+            message: "Master owner email is required when they are a separate signer.",
+          });
+        }
+        if (address.length < 4) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["masterOwners", index, "address"],
+            message: "Master owner mailing address is required when they are a separate signer.",
+          });
+        }
+      }
+    });
   });
 
 export const signatureSchema = z.object({
