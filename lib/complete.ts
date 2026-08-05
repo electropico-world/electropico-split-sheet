@@ -1,13 +1,14 @@
 import { getAgreementBundle } from "./data";
-import { sendCompletedAgreement } from "./email";
+import { sendCompletedAgreement, sendElectropicoCompletionConfirmation } from "./email";
 import { generateAgreementPdf } from "./pdf";
+import { isAgreementFullySigned } from "./signing";
 import { getSupabaseAdmin } from "./supabase";
 
 export async function completeAgreementIfReady(agreementId: string) {
   const bundle = await getAgreementBundle(agreementId);
   if (!bundle) throw new Error("Agreement not found.");
   if (bundle.status === "completed") return bundle;
-  if (!bundle.songwriters.length || bundle.songwriters.some((writer) => !writer.signed_at || !writer.signature_data)) return bundle;
+  if (!isAgreementFullySigned(bundle)) return bundle;
 
   const pdf = await generateAgreementPdf(bundle);
   const supabase = getSupabaseAdmin();
@@ -28,6 +29,7 @@ export async function completeAgreementIfReady(agreementId: string) {
   const completedBundle = (await getAgreementBundle(bundle.id))!;
   try {
     await sendCompletedAgreement(completedBundle, pdf);
+    await sendElectropicoCompletionConfirmation(completedBundle, pdf);
     await supabase.from("agreements").update({ completion_email_sent_at: new Date().toISOString() }).eq("id", bundle.id);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown email delivery error";
