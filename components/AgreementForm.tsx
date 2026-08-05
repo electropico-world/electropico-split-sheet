@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MASTER_OWNERSHIP_LABEL_RELEASE_TEXT } from "@/lib/agreementText";
 import type { AgreementBundle, AgreementInput, MasterOwnerInput, SongwriterInput } from "@/lib/types";
 
 const blankWriter = (): SongwriterInput => ({
@@ -221,6 +222,9 @@ export default function AgreementForm({ bundle }: { bundle?: AgreementBundle }) 
         <span className="eyebrow">Step 3</span>
         <h2>Sound recording ownership</h2>
         <p className="meta">Each master owner / copyright claimant must sign. If they are already one of the songwriters, link them below so they do not sign twice.</p>
+        <div className="notice" style={{ marginBottom: "1rem" }}>
+          <strong>Master Ownership / Label Release.</strong> {MASTER_OWNERSHIP_LABEL_RELEASE_TEXT}
+        </div>
         {form.masterOwners.map((owner, index) => {
           const linked = owner.linkedSongwriterPosition || null;
           return (
