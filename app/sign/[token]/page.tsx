@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import SignAgreementForm from "@/components/SignAgreementForm";
+import { MASTER_OWNERSHIP_LABEL_RELEASE_TEXT } from "@/lib/agreementText";
 import { getAgreementBySigningToken } from "@/lib/data";
 import { countRequiredSignatures, getSigningPartyByToken } from "@/lib/signing";
 
@@ -45,7 +46,7 @@ export default async function SigningPage({ params }: { params: Promise<{ token:
             <h2>Song & Sound Recording Split Agreement</h2>
             <p>Each undersigned songwriter, whether independently or jointly, has contributed to the authorship of the original musical composition identified above (the “Composition”) and, where applicable, to the associated sound recording (the “Master”). Ownership and administration of the Master shall be as stated below. Rights in the Master include, without limitation, reproduction, manufacturing, monetization, distribution, promotion, and other commercial exploitation of the Master.</p>
             <p>The undersigned intend that all music and lyrics in the Composition be merged into a single joint work. The Composition shall be registered with the applicable performing rights organizations and/or publishing administrators according to the shares below.</p>
-            <p><strong>Master Ownership / Label Release.</strong> The parties acknowledge that master ownership is set out in the Sound Recording Ownership table below. Where FABRIKA LLC d/b/a ELECTROPICO RECORDS is listed as one hundred percent (100%) owner of the Master, Artist acknowledges that ELECTROPICO RECORDS will act as label of record and may distribute, promote, monetize, market, and creatively develop the Master as part of its catalog and release activity. Artist retains Artist’s songwriter share, publishing rights, name, likeness, and composition rights as listed in this split sheet.</p>
+            <p><strong>Master Ownership / Label Release.</strong> {MASTER_OWNERSHIP_LABEL_RELEASE_TEXT}</p>
 
             <h3>Composition ownership</h3>
             <div className="table-wrap" style={{ fontFamily: "Arial, sans-serif" }}>
