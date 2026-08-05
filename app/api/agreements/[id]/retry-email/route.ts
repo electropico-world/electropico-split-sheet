@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { getAgreementBundle } from "@/lib/data";
-import { sendCompletedAgreement } from "@/lib/email";
+import { sendCompletedAgreement, sendElectropicoCompletionConfirmation } from "@/lib/email";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export async function POST(_: Request, context: { params: Promise<{ id: string }> }) {
@@ -18,6 +18,7 @@ export async function POST(_: Request, context: { params: Promise<{ id: string }
     if (error || !data) throw error || new Error("Unable to load the completed PDF.");
     const pdf = Buffer.from(await data.arrayBuffer());
     await sendCompletedAgreement(bundle, pdf);
+    await sendElectropicoCompletionConfirmation(bundle, pdf);
     await supabase
       .from("agreements")
       .update({ completion_email_sent_at: new Date().toISOString(), completion_email_error: null })
