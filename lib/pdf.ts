@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import { masterOwnerSignatureSource } from "./signing";
 import type { AgreementBundle } from "./types";
 
 const PAGE_W = 612;
@@ -106,6 +107,47 @@ function dataUrlToBytes(dataUrl: string) {
   return Uint8Array.from(Buffer.from(base64, "base64"));
 }
 
+async function drawSignatureBlock(
+  pdf: PDFDocument,
+  page: PDFPage,
+  y: number,
+  pageNumber: number,
+  bold: PDFFont,
+  regular: PDFFont,
+  serif: PDFFont,
+  roleLabel: string,
+  name: string,
+  email: string,
+  address: string,
+  signatureData: string | null,
+  signedName: string | null,
+  signedAt: string | null,
+  note?: string,
+) {
+  ({ page, y, pageNumber } = ensureSpace(pdf, page, y, 150, bold, regular, pageNumber));
+  page.drawRectangle({ x: MARGIN, y: y - 128, width: PAGE_W - MARGIN * 2, height: 128, borderColor: LINE, borderWidth: 0.8 });
+  page.drawText(roleLabel.toUpperCase(), { x: MARGIN + 12, y: y - 18, size: 7, font: bold, color: MUTED });
+  page.drawText(name, { x: MARGIN + 12, y: y - 34, size: 11, font: bold, color: INK });
+  page.drawText(clean(email), { x: MARGIN + 12, y: y - 52, size: 8.5, font: regular, color: INK });
+  const addressLines = wrapText(clean(address), regular, 8.2, 220).slice(0, 3);
+  addressLines.forEach((line, i) => page.drawText(line, { x: MARGIN + 12, y: y - 69 - i * 10, size: 8.2, font: regular, color: INK }));
+  if (note) page.drawText(note, { x: MARGIN + 12, y: y - 106, size: 7.4, font: regular, color: MUTED });
+
+  page.drawText("SIGNATURE", { x: MARGIN + 284, y: y - 21, size: 7, font: bold, color: MUTED });
+  if (signatureData) {
+    try {
+      const image = await pdf.embedPng(dataUrlToBytes(signatureData));
+      const scale = Math.min(170 / image.width, 53 / image.height);
+      page.drawImage(image, { x: MARGIN + 284, y: y - 82, width: image.width * scale, height: image.height * scale });
+    } catch {
+      page.drawText(signedName || name, { x: MARGIN + 284, y: y - 57, size: 16, font: serif, color: INK });
+    }
+  }
+  page.drawLine({ start: { x: MARGIN + 284, y: y - 86 }, end: { x: PAGE_W - MARGIN - 12, y: y - 86 }, thickness: 0.7, color: LINE });
+  page.drawText(`Signed: ${signedAt ? formatDate(signedAt) : "Pending"}`, { x: MARGIN + 284, y: y - 105, size: 8.3, font: regular, color: MUTED });
+  return { page, y: y - 142, pageNumber };
+}
+
 export async function generateAgreementPdf(bundle: AgreementBundle) {
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
@@ -178,33 +220,52 @@ export async function generateAgreementPdf(bundle: AgreementBundle) {
   const law = `This Agreement may be signed in counterparts and electronically and shall be governed by the laws of the State/Commonwealth of ${bundle.governing_state}.`;
   y = drawWrapped(page, law, MARGIN, y, PAGE_W - MARGIN * 2, serif, 9.4, 13.2, INK) - 20;
 
-  page.drawText("ACKNOWLEDGED AND AGREED", { x: MARGIN, y, size: 12, font: serifBold, color: INK });
+  page.drawText("ACKNOWLEDGED AND AGREED — SONGWRITERS", { x: MARGIN, y, size: 12, font: serifBold, color: INK });
   y -= 25;
 
   for (const writer of bundle.songwriters) {
-    ({ page, y, pageNumber } = ensureSpace(pdf, page, y, 150, bold, regular, pageNumber));
-    page.drawRectangle({ x: MARGIN, y: y - 128, width: PAGE_W - MARGIN * 2, height: 128, borderColor: LINE, borderWidth: 0.8 });
-    page.drawText(writer.legal_name, { x: MARGIN + 12, y: y - 21, size: 11, font: bold, color: INK });
-    if (writer.professional_name) {
-      page.drawText(`p/k/a ${writer.professional_name}`, { x: MARGIN + 12, y: y - 37, size: 8.5, font: regular, color: MUTED });
-    }
-    page.drawText(writer.email, { x: MARGIN + 12, y: y - 56, size: 8.5, font: regular, color: INK });
-    const addressLines = wrapText(writer.address, regular, 8.2, 220).slice(0, 3);
-    addressLines.forEach((line, i) => page.drawText(line, { x: MARGIN + 12, y: y - 73 - i * 10, size: 8.2, font: regular, color: INK }));
+    ({ page, y, pageNumber } = await drawSignatureBlock(
+      pdf,
+      page,
+      y,
+      pageNumber,
+      bold,
+      regular,
+      serif,
+      "Songwriter",
+      writer.legal_name,
+      writer.email,
+      writer.address,
+      writer.signature_data,
+      writer.signed_name,
+      writer.signed_at,
+      writer.professional_name ? `p/k/a ${writer.professional_name}` : undefined,
+    ));
+  }
 
-    page.drawText("SIGNATURE", { x: MARGIN + 284, y: y - 21, size: 7, font: bold, color: MUTED });
-    if (writer.signature_data) {
-      try {
-        const image = await pdf.embedPng(dataUrlToBytes(writer.signature_data));
-        const scale = Math.min(170 / image.width, 53 / image.height);
-        page.drawImage(image, { x: MARGIN + 284, y: y - 82, width: image.width * scale, height: image.height * scale });
-      } catch {
-        page.drawText(writer.signed_name || writer.legal_name, { x: MARGIN + 284, y: y - 57, size: 16, font: serif, color: INK });
-      }
-    }
-    page.drawLine({ start: { x: MARGIN + 284, y: y - 86 }, end: { x: PAGE_W - MARGIN - 12, y: y - 86 }, thickness: 0.7, color: LINE });
-    page.drawText(`Signed: ${writer.signed_at ? formatDate(writer.signed_at) : "Pending"}`, { x: MARGIN + 284, y: y - 105, size: 8.3, font: regular, color: MUTED });
-    y -= 142;
+  ({ page, y, pageNumber } = ensureSpace(pdf, page, y, 55, bold, regular, pageNumber));
+  page.drawText("ACKNOWLEDGED AND AGREED — SOUND RECORDING OWNERS / COPYRIGHT CLAIMANTS", { x: MARGIN, y, size: 10.5, font: serifBold, color: INK });
+  y -= 25;
+
+  for (const owner of bundle.master_owners) {
+    const source = masterOwnerSignatureSource(bundle, owner);
+    ({ page, y, pageNumber } = await drawSignatureBlock(
+      pdf,
+      page,
+      y,
+      pageNumber,
+      bold,
+      regular,
+      serif,
+      "Sound Recording Owner / Copyright Claimant",
+      owner.owner_name,
+      source.email,
+      source.address,
+      source.signatureData,
+      source.signedName,
+      source.signedAt,
+      `${owner.ownership_percent}% master ownership · ${source.note}`,
+    ));
   }
 
   const bytes = await pdf.save();
