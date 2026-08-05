@@ -21,7 +21,10 @@ export default async function SigningPage({ params }: { params: Promise<{ token:
 
   return (
     <main className="narrow">
-      <div className="brand" style={{ marginBottom: "2rem" }}><span className="brand-mark">EP</span><span>ELECTROPICO SPLITS</span></div>
+      <div className="brand sign-brand" style={{ marginBottom: "2rem" }}>
+        <img className="sign-logo" src="/electropico-logo.svg" alt="Electropico Records" />
+        <span className="brand-title">SPLIT AGREEMENT</span>
+      </div>
 
       {party.signedAt ? (
         <section className="card">
